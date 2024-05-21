@@ -54,6 +54,7 @@
          $equals_in = *ui_in[7];
          $valid = !(>>1$equals_in) & $equals_in;
       @1
+         $reset = *reset;
          $val1[7:0] = >>1$out[7:0];
          
          $sum[7:0]  = $val1[7:0] + $val2[7:0];
