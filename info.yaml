@@ -2,7 +2,7 @@
 project:
 
   # If using an HDL, set wokwi_id as 0 and uncomment and list your source files here. 
-  wokwi_id:     111111111111111111        # If using wokwi, set this to your project's ID
+  wokwi_id:     https://wokwi.com/projects/398444915013535745        # If using wokwi, set this to your project's ID
   
   title:        "TBD"      # Project title
   author:       "TBD"      # Your name
