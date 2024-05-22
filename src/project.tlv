@@ -65,8 +65,8 @@
          $mem_temp[7:0] = >>2$mem[7:0];
          
       @2 // added pipelining for lab C-2CYC
-         $valid_and_five = $valid && ($op==3'd5);
-         $valid_and_four = $valid && ($op==3'd4);
+         //$valid_and_five = $valid && ($op==3'd5);
+         //$valid_and_four = $valid && ($op==3'd4);
          $out[7:0] = $reset
                   ? 8'b0 :
                   ! $valid
