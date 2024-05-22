@@ -49,31 +49,49 @@
    // | YOUR CODE HERE |
    |calc 
       @0
-         $op[1:0] = *ui_in[5:4];
+         $op[2:0] = *ui_in[6:4];
          $val2[7:0] = {4'b0, *ui_in[3:0]};
          $equals_in = *ui_in[7];
          $valid = !(>>1$equals_in) & $equals_in;
       @1
          $reset = *reset;
-         $val1[7:0] = >>1$out[7:0];
+         $val1[7:0] = >>2$out[7:0];
+         ?$valid
+            $sum[7:0]  = $val1[7:0] + $val2[7:0];
+            $diff[7:0] = $val1[7:0] - $val2[7:0];
+            $prod[7:0] = $val1[7:0] * $val2[7:0];
+            $quot[7:0] = $val1[7:0] / $val2[7:0];
          
-         $sum[7:0]  = $val1[7:0] + $val2[7:0];
-         $diff[7:0] = $val1[7:0] - $val2[7:0];
-         $prod[7:0] = $val1[7:0] * $val2[7:0];
-         $quot[7:0] = $val1[7:0] / $val2[7:0];
+         $mem_temp[7:0] = >>2$mem[7:0];
          
+      @2 // added pipelining for lab C-2CYC
+         $valid_and_five = $valid && ($op==3'd5);
+         $valid_and_four = $valid && ($op==3'd4);
          $out[7:0] = $reset
-                     ? 8'b0 :
-                     ! $valid
-                     ? $val1[7:0]:
-                     $op[1:0]==2'b11
-                     ? $quot[7:0] :
-                     $op[1:0]==2'b10
-                     ? $prod[7:0] :
-                     $op[1:0]==2'b01
-                     ? $diff[7:0] :
-                     //default
-                     $sum[7:0];
+                  ? 8'b0 :
+                  ! $valid
+                  ? >>1$out[7:0]:
+                  $op == 3'b011
+                  ? $quot[7:0] :
+                  $op == 3'b010
+                  ? $prod[7:0] :
+                  $op == 3'b001
+                  ? $diff[7:0] :
+                  $op == 3'b000
+                  ? $sum[7:0] :
+                  $op == 3'b100
+                  ? $mem_temp[7:0]:
+                  //? >>2$mem[7:0]: // alternative, matches the green text of C-MEM
+                  >>1$out[7:0];
+         $mem[7:0] = $reset
+                  ? 8'b0 :
+                  ! $valid
+                  ? >>1$mem[7:0]:
+                  $op == 3'b101 //op code 5 updates the mem from previous clock's val1 = previous output
+                  ? $val1[7:0] :
+                  >>1$mem[7:0];
+         
+      @3 //so now the 7-segment display will be one behind the value in the VIZ calculator
          $digit[3:0] = $out[3:0];
          *uo_out = $digit == 0
                      ? 8'b00111111:
@@ -108,7 +126,6 @@
                      $digit ==15
                      ? 8'b01110001:
                      8'b00000000;
-         
    // |                |
    // ==================
    
@@ -116,7 +133,7 @@
    
    
 
-   m5+cal_viz(@1, m5_if(m5_in_fpga, /fpga, /top))
+   m5+cal_viz(@2, m5_if(m5_in_fpga, /fpga, /top)) //for pipelined version changed from @1 to @2. So now you are 2 cycles behind inputs
    
    // Connect Tiny Tapeout outputs. Note that uio_ outputs are not available in the Tiny-Tapeout-3-based FPGA boards.
    //*uo_out = 8'b11111111;
@@ -144,7 +161,7 @@ module top(input logic clk, input logic reset, input logic [31:0] cyc_cnt, outpu
    // Instantiate the Tiny Tapeout module.
    m5_user_module_name tt(.*);
    
-   assign passed = top.cyc_cnt > 80;
+   assign passed = top.cyc_cnt > 180;
    assign failed = 1'b0;
 endmodule
 
