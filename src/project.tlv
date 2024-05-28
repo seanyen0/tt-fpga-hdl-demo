@@ -27,7 +27,7 @@
    //user variables
    define_hier(DEPTH, 32) // max bits in correct sequence. Needs to be even. 
                           // _hier = there are multiple linked variables. _INDEX_MAX is log2 of the game counter max count. _CNT is the value of max count.
-   define_hier(CLKS_PER_ADV,20000000) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
+   define_hier(CLKS_PER_ADV,16777215) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
    var(clks_per_led_off, 5000000) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
    
    
