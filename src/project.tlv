@@ -101,9 +101,9 @@
                     ? >>1$game_cnt + 1 :
                     >>1$game_cnt;
          
-         $game_stg[m5_DEPTH_INDEX_MAX:0] = $reset || >>1$game_stg == m5_calc(m5_DEPTH_CNT/2) //stage-counting signal for max(game_cnt). Increment one more stage if user is successful  
+         $game_stg[m5_DEPTH_INDEX_MAX:0] = $reset || >>1$game_stg > m5_calc(m5_DEPTH_CNT/2) //stage-counting signal for max(game_cnt). Increment one more stage if user is successful  
                     ? 1 :
-                    $win_stg == 1 && >>1$game_stg != m5_calc(m5_DEPTH_CNT/2)
+                    $win_stg == 1 && >>1$game_stg <= m5_calc(m5_DEPTH_CNT/2)
                     ? >>1$game_stg + 1 :
                     >>1$game_stg;
          
