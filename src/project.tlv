@@ -25,10 +25,10 @@
                                    /// 0: Don't provide synchronization and debouncing.
                                    /// m5_if_defined_as(MAKERCHIP, 1, 0, 1): Debounce unless in Makerchip.
    //user variables
-   define_hier(DEPTH, 32) // max bits in correct sequence. Needs to be even. 
+   define_hier(DEPTH, 128) // max bits in correct sequence. Needs to be even. 
                           // _hier = there are multiple linked variables. _INDEX_MAX is log2 of the game counter max count. _CNT is the value of max count.
-   define_hier(CLKS_PER_ADV,20000000) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
-   var(clks_per_led_off, 3000000) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
+   define_hier(CLKS_PER_ADV,4) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
+   var(clks_per_led_off, 2) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
    
    
    // ======================
@@ -71,7 +71,7 @@
       
       @1   
          //native clock count. Feeds into subdividing into human-respondable clock $game_cnt.
-         $ii[m5_CLKS_PER_ADV_INDEX_MAX:0] = $reset || >>1$ii==m5_calc(m5_CLKS_PER_ADV_CNT-1) || >>1$win_stg
+         $ii[m5_CLKS_PER_ADV_INDEX_MAX:0] = $reset || >>1$ii==m5_calc(m5_CLKS_PER_ADV_CNT-1) || >>1$win_stg || ! >>2$lose_game && >>1$lose_game
                     ? 0 :
                     >>1$ii + 1; // $ii will loop back to zero when it reaches m5_DEPTH_INDEX_MAX bits.
          
@@ -158,11 +158,87 @@
                     >>1$win_stg_counter + 1;
          $win_stg = ($win_stg_counter == m5_calc(m5_CLKS_PER_ADV_CNT-1)) && (>>1$win_stg_counter == m5_calc(m5_CLKS_PER_ADV_CNT-2));
          
+         $disp_stat_dig1 = >>1$lose_game && $ii > m5_CLKS_PER_ADV_MAX/3 && $ii <= m5_CLKS_PER_ADV_MAX/3*2;
+         $disp_stat_dig2 = >>1$lose_game && $ii > m5_CLKS_PER_ADV_MAX/3*2;
+         
+         /* verilator lint_off WIDTH */
+         $stat_dig1[7:0] = $game_stg[m5_DEPTH_INDEX_MAX:4] == 0
+                     ? 8'b00111111:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] == 1
+                     ? 8'b00000110:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==2
+                     ? 8'b01011011:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==3
+                     ? 8'b01001111:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==4
+                     ? 8'b01100110:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==5
+                     ? 8'b01101101:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==6
+                     ? 8'b01111101:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==7
+                     ? 8'b00000111:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==8
+                     ? 8'b01111111:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==9
+                     ? 8'b01101111:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==10
+                     ? 8'b01110111:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==11
+                     ? 8'b01111100:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==12
+                     ? 8'b00111001:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==13
+                     ? 8'b01011110:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==14
+                     ? 8'b01111001:
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==15
+                     ? 8'b01110001:
+                     8'b00000000;
+         /* verilator lint_on WIDTH */
+         $stat_dig2[7:0] = $game_stg[3:0] == 0
+                     ? 8'b00111111:
+                     $game_stg[3:0] == 1
+                     ? 8'b00000110:
+                     $game_stg[3:0] ==2
+                     ? 8'b01011011:
+                     $game_stg[3:0] ==3
+                     ? 8'b01001111:
+                     $game_stg[3:0] ==4
+                     ? 8'b01100110:
+                     $game_stg[3:0] ==5
+                     ? 8'b01101101:
+                     $game_stg[3:0] ==6
+                     ? 8'b01111101:
+                     $game_stg[3:0] ==7
+                     ? 8'b00000111:
+                     $game_stg[3:0] ==8
+                     ? 8'b01111111:
+                     $game_stg[3:0] ==9
+                     ? 8'b01101111:
+                     $game_stg[3:0] ==10
+                     ? 8'b01110111:
+                     $game_stg[3:0] ==11
+                     ? 8'b01111100:
+                     $game_stg[3:0] ==12
+                     ? 8'b00111001:
+                     $game_stg[3:0] ==13
+                     ? 8'b01011110:
+                     $game_stg[3:0] ==14
+                     ? 8'b01111001:
+                     $game_stg[3:0] ==15
+                     ? 8'b01110001:
+                     8'b00000000;
+         
          // Display the sequence to the user: flash off before turning on
          $sseg_out[7:0] = (! $state_guess && ( $ii > m5_CLKS_PER_ADV_MAX - m5_clks_per_led_off  || $advance_game_cnt ) ) || $reset
                      ? 8'b10000000 : //80, just the dot
-                     $lose_game
+                     $lose_game && ! ($disp_stat_dig1 || $disp_stat_dig2)
                      ? 8'b00111000 : //"L", 0x38
+                     $lose_game && $disp_stat_dig1
+                     ? $stat_dig1 :
+                     $lose_game && $disp_stat_dig2
+                     ? $stat_dig2 :
                      ( ! $state_guess && $color == 0 && ($game_cnt < $game_stg) ) || ( $state_guess && $user_input != 0 && $user_guess == 0 )
                      ? 8'b00111111: //3f
                      ( ! $state_guess && $color == 1 && ($game_cnt < $game_stg) ) || ( $state_guess && $user_input != 0 && $user_guess == 1 )
@@ -233,7 +309,7 @@ module top(input logic clk, input logic reset, input logic [31:0] cyc_cnt, outpu
       #8
          ui_in = 8'h00;
       #20
-         ui_in = 8'h01;
+         ui_in = 8'h04;//should be 01
       #8
          ui_in = 8'h00;
       
