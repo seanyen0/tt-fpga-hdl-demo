@@ -27,8 +27,8 @@
    //user variables
    define_hier(DEPTH, 128) // max bits in correct sequence. Needs to be even. 
                           // _hier = there are multiple linked variables. _INDEX_MAX is log2 of the game counter max count. _CNT is the value of max count.
-   define_hier(CLKS_PER_ADV,20000000) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
-   var(clks_per_led_off, 3000000) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
+   define_hier(CLKS_PER_ADV,4) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
+   var(clks_per_led_off, 2) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
    
    
    // ======================
@@ -162,71 +162,73 @@
          $disp_stat_dig2 = >>1$lose_game && $ii > m5_CLKS_PER_ADV_MAX/3*2;
          
          /* verilator lint_off WIDTH */
-         $stat_dig1[7:0] = $game_stg[m5_DEPTH_INDEX_MAX:4] == 0
+         $stat_dig1[7:0] =
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 == 0 || $game_stg[m5_DEPTH_INDEX_MAX:4] == 0
                      ? 8'b00111111:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] == 1
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 == 1
                      ? 8'b00000110:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==2
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 ==2
                      ? 8'b01011011:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==3
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 ==3
                      ? 8'b01001111:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==4
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 ==4
                      ? 8'b01100110:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==5
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 ==5
                      ? 8'b01101101:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==6
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 ==6
                      ? 8'b01111101:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==7
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 ==7
                      ? 8'b00000111:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==8
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 ==8
                      ? 8'b01111111:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==9
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 ==9
                      ? 8'b01101111:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==10
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 ==10
                      ? 8'b01110111:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==11
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 ==11
                      ? 8'b01111100:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==12
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 ==12
                      ? 8'b00111001:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==13
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 ==13
                      ? 8'b01011110:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==14
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 ==14
                      ? 8'b01111001:
-                     $game_stg[m5_DEPTH_INDEX_MAX:4] ==15
+                     $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 ==15
                      ? 8'b01110001:
                      8'b00000000;
          /* verilator lint_on WIDTH */
-         $stat_dig2[7:0] = $game_stg[3:0] == 0
+         $stat_dig2[7:0] =
+                     $game_stg[3:0] - 1 == 0 || $game_stg[3:0] == 0
                      ? 8'b00111111:
-                     $game_stg[3:0] == 1
+                     $game_stg[3:0] - 1 == 1
                      ? 8'b00000110:
-                     $game_stg[3:0] ==2
+                     $game_stg[3:0] - 1 ==2
                      ? 8'b01011011:
-                     $game_stg[3:0] ==3
+                     $game_stg[3:0] - 1 ==3
                      ? 8'b01001111:
-                     $game_stg[3:0] ==4
+                     $game_stg[3:0] - 1 ==4
                      ? 8'b01100110:
-                     $game_stg[3:0] ==5
+                     $game_stg[3:0] - 1 ==5
                      ? 8'b01101101:
-                     $game_stg[3:0] ==6
+                     $game_stg[3:0] - 1 ==6
                      ? 8'b01111101:
-                     $game_stg[3:0] ==7
+                     $game_stg[3:0] - 1 ==7
                      ? 8'b00000111:
-                     $game_stg[3:0] ==8
+                     $game_stg[3:0] - 1 ==8
                      ? 8'b01111111:
-                     $game_stg[3:0] ==9
+                     $game_stg[3:0] - 1 ==9
                      ? 8'b01101111:
-                     $game_stg[3:0] ==10
+                     $game_stg[3:0] - 1 ==10
                      ? 8'b01110111:
-                     $game_stg[3:0] ==11
+                     $game_stg[3:0] - 1 ==11
                      ? 8'b01111100:
-                     $game_stg[3:0] ==12
+                     $game_stg[3:0] - 1 ==12
                      ? 8'b00111001:
-                     $game_stg[3:0] ==13
+                     $game_stg[3:0] - 1 ==13
                      ? 8'b01011110:
-                     $game_stg[3:0] ==14
+                     $game_stg[3:0] - 1 ==14
                      ? 8'b01111001:
-                     $game_stg[3:0] ==15
+                     $game_stg[3:0] - 1 ==15
                      ? 8'b01110001:
                      8'b00000000;
          
