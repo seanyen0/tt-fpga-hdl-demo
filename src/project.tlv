@@ -28,7 +28,7 @@
    define_hier(DEPTH, 32) // max bits in correct sequence. Needs to be even. 
                           // _hier = there are multiple linked variables. _INDEX_MAX is log2 of the game counter max count. _CNT is the value of max count.
    define_hier(CLKS_PER_ADV,20000000) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
-   var(clks_per_led_off, 5000000) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
+   var(clks_per_led_off, 3000000) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
    
    
    // ======================
@@ -152,7 +152,7 @@
                      ? 8'b01011011: //5b
                      ( ! $state_guess && $color == 3 && ($game_cnt < $game_stg) ) || ( $state_guess && $user_input != 0 && $user_guess == 3 )
                      ? 8'b01001111 : //4f
-                     8'b10000000;
+                     8'b01000000;
          
          // m5+sseg_decoder($digits_out, $digits_in)
          *uo_out = $sseg_out;
