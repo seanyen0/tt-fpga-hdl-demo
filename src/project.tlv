@@ -144,7 +144,7 @@
          
          // Define win/loss/correct/etc.
          $correct_guess = $user_button_press && ($user_guess == $color);
-         $lose_game = $user_button_press & ! $correct_guess
+         $lose_game = $user_button_press && ! $correct_guess && ! >>1$lose_game
                       ? 1 :
                       $reset || >>1$lose_game && $user_button_press
                       ? 0 :
