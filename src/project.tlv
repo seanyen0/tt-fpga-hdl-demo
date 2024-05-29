@@ -93,7 +93,7 @@
          
          
          $advance_game_cnt = ( ! >>1$state_guess && ($ii == m5_calc(m5_CLKS_PER_ADV_CNT-1)) )
-                            || ( >>1$state_guess &&  >>1$user_button_press);
+                            || ( >>1$state_guess &&  >>1$user_button_press && ! >>1$lose_game);
          
          // game counter
          $game_cnt[m5_DEPTH_INDEX_MAX:0] =
