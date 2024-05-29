@@ -91,14 +91,14 @@
                     ? >>1$game_cnt + 1 :
                     >>1$game_cnt;
          
-         $game_stg[m5_DEPTH_INDEX_MAX:0] = $reset || >>1$game_stg == m5_DEPTH_CNT-1 //stage-counting signal for max(game_cnt). Increment one more stage if user is successful  
+         $game_stg[m5_DEPTH_INDEX_MAX:0] = $reset || >>1$game_stg == m5_calc(m5_DEPTH_CNT-1) //stage-counting signal for max(game_cnt). Increment one more stage if user is successful  
                     ? 1 :
-                    $win_stg == 1 && >>1$game_stg != m5_DEPTH_CNT-1
+                    $win_stg == 1 && >>1$game_stg != m5_calc(m5_DEPTH_CNT-1)
                     ? >>1$game_stg + 1 :
                     >>1$game_stg;
          
          
-         $correct_seq[m5_DEPTH_INDEX_MAX:0] = m5_DEPTH_CNT'hD6D6D6D6;
+         $correct_seq[m5_DEPTH_MAX:0] = m5_DEPTH_CNT'hD6D6D6D6;
          $color[1:0] = $correct_seq[ ($game_cnt + $game_cnt) +: 2];
          
          // USER INPUT PHASE (should include $state_guess in conditionals!)
