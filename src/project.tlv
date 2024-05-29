@@ -65,13 +65,22 @@
       //USER VARIABLES:
       // $user_guess: user input guess
       @0
-         $reset = *reset || *ui_in[7] || >>2$lose_game && >>1$user_button_press;
+         $reset_in = *reset || *ui_in[7] || >>2$lose_game && >>1$user_button_press;
          
       @1   
          //native clock count. Feeds into subdividing into human-respondable clock $game_cnt.
-         $ii[m5_CLKS_PER_ADV_INDEX_MAX:0] = $reset || >>1$ii==m5_CLKS_PER_ADV_CNT-1
+         $ii[m5_CLKS_PER_ADV_INDEX_MAX:0] = $reset || >>1$ii==m5_calc(m5_CLKS_PER_ADV_CNT-1)
                     ? 0 :
                     >>1$ii + 1; // $ii will loop back to zero when it reaches m5_DEPTH_INDEX_MAX bits.
+         
+         // wait by one second after reset
+         $reset_counter[m5_CLKS_PER_ADV_INDEX_MAX:0] = $reset_in
+                    ? 0 :
+                    >>1$reset_counter == m5_calc(m5_CLKS_PER_ADV_CNT-1)
+                    ? >>1$reset_counter :
+                    >>1$reset_counter + 1; // $ii will loop back to zero when it reaches m5_DEPTH_INDEX_MAX bits.
+         $reset = ($reset_counter == m5_calc(m5_CLKS_PER_ADV_CNT-1)) && (>>1$reset_counter == m5_calc(m5_CLKS_PER_ADV_CNT-2));
+         
          
          // game state: 1 = user is guessing. 0 = something else
          $state_guess = $reset || >>1$win_stg
@@ -81,8 +90,8 @@
                        >>1$state_guess;
          
          
-         $advance_game_cnt = ( ! >>1$state_guess && ($ii == m5_CLKS_PER_ADV_CNT-1) )
-                            || ( >>1$state_guess &&  $user_button_press);
+         $advance_game_cnt = ( ! >>1$state_guess && ($ii == m5_calc(m5_CLKS_PER_ADV_CNT-1)) )
+                            || ( >>1$state_guess &&  >>1$user_button_press);
          
          // game counter
          $game_cnt[m5_DEPTH_INDEX_MAX:0] = $reset || >>1$win_stg || ($advance_game_cnt && >>1$game_cnt>=>>1$game_stg) //human-respondable game clock/count. No "-1" because you want game_cnt to be 2x the depth of the data (due to two bits per count)
@@ -121,7 +130,13 @@
                       $reset
                       ? 0 :
                       >>1$lose_game;
-         $win_stg = (>>1$user_input == 4'b0) && >>1$state_guess && ( >>1$game_cnt == >>1$game_stg ); //WAS: ! >>1$lose_game && ( >>1$game_cnt == >>1$game_stg )
+         $win_stg_in = (>>1$user_input == 4'b0) && >>1$state_guess && ( >>1$game_cnt == >>1$game_stg ); //WAS: ! >>1$lose_game && ( >>1$game_cnt == >>1$game_stg )
+         $win_stg_counter[m5_CLKS_PER_ADV_INDEX_MAX:0] = $win_stg_in && ! >>1$win_stg_in
+                    ? 0 :
+                    >>1$win_stg_counter == m5_calc(m5_CLKS_PER_ADV_CNT-1)
+                    ? >>1$win_stg_counter :
+                    >>1$win_stg_counter + 1;
+         $win_stg = ($win_stg_counter == m5_calc(m5_CLKS_PER_ADV_CNT-1)) && (>>1$win_stg_counter == m5_calc(m5_CLKS_PER_ADV_CNT-2));
          
          // Display the sequence to the user: flash off before turning on
          $sseg_out[7:0] = (! $state_guess && ( $ii > m5_CLKS_PER_ADV_MAX - m5_clks_per_led_off  || $advance_game_cnt ) ) || $reset
@@ -193,7 +208,7 @@ module top(input logic clk, input logic reset, input logic [31:0] cyc_cnt, outpu
       #8
          ui_in = 8'h00;
       
-      #40
+      #80
          ui_in = 8'h04;
       #8
          ui_in = 8'h00;
