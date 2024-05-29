@@ -25,7 +25,7 @@
                                    /// 0: Don't provide synchronization and debouncing.
                                    /// m5_if_defined_as(MAKERCHIP, 1, 0, 1): Debounce unless in Makerchip.
    //user variables
-   define_hier(DEPTH, 8) // max bits in correct sequence. Needs to be even. 
+   define_hier(DEPTH, 32) // max bits in correct sequence. Needs to be even. 
                           // _hier = there are multiple linked variables. _INDEX_MAX is log2 of the game counter max count. _CNT is the value of max count.
    define_hier(CLKS_PER_ADV,20000000) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
    var(clks_per_led_off, 3000000) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
@@ -64,9 +64,11 @@
       
       //USER VARIABLES:
       // $user_guess: user input guess
+      
       @-1
          $reset_in = *reset || *ui_in[7] || >>3$lose_game && >>2$user_button_press;
          
+      
       @1   
          //native clock count. Feeds into subdividing into human-respondable clock $game_cnt.
          $ii[m5_CLKS_PER_ADV_INDEX_MAX:0] = $reset || >>1$ii==m5_calc(m5_CLKS_PER_ADV_CNT-1) || >>1$win_stg
@@ -108,8 +110,25 @@
                     >>1$game_stg;
          
          
-         $correct_seq[m5_DEPTH_MAX:0] = m5_DEPTH_CNT'hD6;
-         $color[1:0] = $correct_seq[ ($game_cnt + $game_cnt) +: 2];
+         //$correct_seq[m5_DEPTH_MAX:0] = m5_DEPTH_CNT'h2B9ECAD6;
+         /xreg[m5_DEPTH_MAX:0]
+            $wr = |simon$rf_wr_en && (|simon$rf_wr_index == #xreg); // #xreg refers to xreg's index
+            $value[1:0] = |simon$reset ?   2'b0           :
+                           $wr        ?   |simon$rf_wr_data :
+                                          $RETAIN; // caps lock = keywords, and $RETAIN is known to hold the value
+         ?$rf_rd_en1
+            $rf_rd_data1[1:0] = /xreg[$rf_rd_index1]>>1$value;
+         
+         //need to connect:
+         $rf_wr_en = $win_stg == 1 && ( >>1$game_stg <= m5_calc(m5_DEPTH_CNT/2) );
+         $rf_wr_index[m5_DEPTH_INDEX_MAX:0] = >>1$game_stg;
+         ?$rf_wr_en
+            $rf_wr_data[1:0] = >>1$ii[1:0];
+         $rf_rd_en1 = $advance_game_cnt;
+         $color[1:0] = $rf_rd_data1[1:0];
+         $rf_rd_index1[m5_DEPTH_INDEX_MAX:0] = $game_cnt;
+         
+         //$color[1:0] = $correct_seq[ ($game_cnt + $game_cnt) +: 2];
          
          // USER INPUT PHASE (should include $state_guess in conditionals!)
          $user_input[3:0] = *ui_in[3:0]; //"continuous" intake of user buttons
@@ -205,149 +224,73 @@ module top(input logic clk, input logic reset, input logic [31:0] cyc_cnt, outpu
       #1  // Drive inputs on the B-phase.
          ui_in = 8'h0;
       #100// Step #_/2 cycles, past reset.
-         ui_in = 8'h04;
+         ui_in = 8'h01;
       #8
          ui_in = 8'h00;
       
       #80
-         ui_in = 8'h04;
+         ui_in = 8'h01;
       #8
          ui_in = 8'h00;
       #20
-         ui_in = 8'h02;
+         ui_in = 8'h01;
       #8
          ui_in = 8'h00;
       
       
       #40
-         ui_in = 8'h04;
+         ui_in = 8'h01;
       #2
          ui_in = 8'h00;
       #2
-         ui_in = 8'h02;
+         ui_in = 8'h01;
       #2
          ui_in = 8'h00;
       #2
-         ui_in = 8'h02;
+         ui_in = 8'h01;
       #8
          ui_in = 8'h00;
       
       
       #120
+         ui_in = 8'h01;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h01;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h01;
+      #8
+         ui_in = 8'h00;
+      #20
          ui_in = 8'h04;
-      #8
-         ui_in = 8'h00;
-      #20
-         ui_in = 8'h02;
-      #8
-         ui_in = 8'h00;
-      #20
-         ui_in = 8'h02;
-      #8
-         ui_in = 8'h00;
-      #20
-         ui_in = 8'h08;
       #8
          ui_in = 8'h00;
       
       
       #80
-         ui_in = 8'h04;
+         ui_in = 8'h01;
       #8
          ui_in = 8'h00;
       #20
-         ui_in = 8'h02;
+         ui_in = 8'h01;
       #8
          ui_in = 8'h00;
       #20
-         ui_in = 8'h02;
-      #8
-         ui_in = 8'h00;
-      #20
-         ui_in = 8'h08;
+         ui_in = 8'h01;
       #8
          ui_in = 8'h00;
       #20
          ui_in = 8'h04;
       #8
          ui_in = 8'h00;
-      
-      
-      
       #20
-         ui_in = 8'h08;
+         ui_in = 8'h01;
       #8
          ui_in = 8'h00;
       
-      #100// Step #_/2 cycles, past reset.
-         ui_in = 8'h04;
-      #8
-         ui_in = 8'h00;
-      
-      #40
-         ui_in = 8'h04;
-      #8
-         ui_in = 8'h00;
-      #20
-         ui_in = 8'h02;
-      #8
-         ui_in = 8'h00;
-      
-      
-      #40
-         ui_in = 8'h04;
-      #8
-         ui_in = 8'h00;
-      #20
-         ui_in = 8'h02;
-      #8
-         ui_in = 8'h00;
-      #20
-         ui_in = 8'h02;
-      #8
-         ui_in = 8'h00;
-      
-      
-      #80
-         ui_in = 8'h04;
-      #8
-         ui_in = 8'h00;
-      #20
-         ui_in = 8'h02;
-      #8
-         ui_in = 8'h00;
-      #20
-         ui_in = 8'h02;
-      #8
-         ui_in = 8'h00;
-      #20
-         ui_in = 8'h08;
-      #8
-         ui_in = 8'h00;
-      
-      
-      #80
-         ui_in = 8'h04;
-      #8
-         ui_in = 8'h00;
-      #20
-         ui_in = 8'h02;
-      #8
-         ui_in = 8'h00;
-      #20
-         ui_in = 8'h02;
-      #8
-         ui_in = 8'h00;
-      #20
-         ui_in = 8'h08;
-      #8
-         ui_in = 8'h00;
-      #20
-         ui_in = 8'h04;
-      #8
-         ui_in = 8'h00;
-      
-      // ...etc.
    end
 
    // Instantiate the Tiny Tapeout module.
