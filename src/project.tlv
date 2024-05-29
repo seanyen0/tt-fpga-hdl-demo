@@ -27,8 +27,8 @@
    //user variables
    define_hier(DEPTH, 128) // max bits in correct sequence. Needs to be even. 
                           // _hier = there are multiple linked variables. _INDEX_MAX is log2 of the game counter max count. _CNT is the value of max count.
-   define_hier(CLKS_PER_ADV,20000000) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
-   var(clks_per_led_off, 3000000) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
+   define_hier(CLKS_PER_ADV,4) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
+   var(clks_per_led_off, 2) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
    
    
    // ======================
@@ -110,7 +110,6 @@
                     >>1$game_stg;
          
          
-         //$correct_seq[m5_DEPTH_MAX:0] = m5_DEPTH_CNT'h2B9ECAD6;
          /xreg[m5_DEPTH_MAX:0]
             $wr = |simon$rf_wr_en && (|simon$rf_wr_index == #xreg); // #xreg refers to xreg's index
             $value[1:0] = |simon$reset ?   2'b0           :
@@ -147,7 +146,7 @@
          $correct_guess = $user_button_press && ($user_guess == $color);
          $lose_game = $user_button_press & ! $correct_guess
                       ? 1 :
-                      $reset
+                      $reset || >>1$lose_game && $user_button_press
                       ? 0 :
                       >>1$lose_game;
          $win_stg_in = (>>1$user_input == 4'b0) && >>1$state_guess && ( >>1$game_cnt == >>1$game_stg ); //WAS: ! >>1$lose_game && ( >>1$game_cnt == >>1$game_stg )
