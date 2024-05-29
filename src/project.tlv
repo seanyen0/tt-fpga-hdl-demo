@@ -27,8 +27,8 @@
    //user variables
    define_hier(DEPTH, 32) // max bits in correct sequence. Needs to be even. 
                           // _hier = there are multiple linked variables. _INDEX_MAX is log2 of the game counter max count. _CNT is the value of max count.
-   define_hier(CLKS_PER_ADV,16384) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
-   var(clks_per_led_off, 2000) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
+   define_hier(CLKS_PER_ADV,20000000) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
+   var(clks_per_led_off, 5000000) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
    
    
    // ======================
@@ -69,7 +69,7 @@
          
       @1   
          //native clock count. Feeds into subdividing into human-respondable clock $game_cnt.
-         $ii[m5_CLKS_PER_ADV_MAX-1:0] = $reset || >>1$ii==m5_CLKS_PER_ADV_CNT-1
+         $ii[m5_CLKS_PER_ADV_INDEX_MAX:0] = $reset || >>1$ii==m5_CLKS_PER_ADV_CNT-1
                     ? 0 :
                     >>1$ii + 1; // $ii will loop back to zero when it reaches m5_DEPTH_INDEX_MAX bits.
          
@@ -91,14 +91,14 @@
                     ? >>1$game_cnt + 1 :
                     >>1$game_cnt;
          
-         $game_stg[m5_DEPTH_INDEX_MAX:0] = $reset //stage-counting signal for max(game_cnt). Increment one more stage if user is successful  
+         $game_stg[m5_DEPTH_INDEX_MAX:0] = $reset || >>1$game_stg == m5_DEPTH_CNT-1 //stage-counting signal for max(game_cnt). Increment one more stage if user is successful  
                     ? 1 :
-                    $win_stg == 1
-                    ?>>1$game_stg + 1 :
+                    $win_stg == 1 && >>1$game_stg != m5_DEPTH_CNT-1
+                    ? >>1$game_stg + 1 :
                     >>1$game_stg;
          
          
-         $correct_seq[m5_DEPTH_CNT-1:0] = m5_DEPTH_CNT'hD6D6D6D6;
+         $correct_seq[m5_DEPTH_INDEX_MAX:0] = m5_DEPTH_CNT'hD6D6D6D6;
          $color[1:0] = $correct_seq[ ($game_cnt + $game_cnt) +: 2];
          
          // USER INPUT PHASE (should include $state_guess in conditionals!)
@@ -149,6 +149,7 @@
    
    
    // Connect Tiny Tapeout outputs. Note that uio_ outputs are not available in the Tiny-Tapeout-3-based FPGA boards.
+   //*uo_out = 8'b0;
    m5_if_neq(m5_target, FPGA, ['*uio_out = 8'b0;'])
    m5_if_neq(m5_target, FPGA, ['*uio_oe = 8'b0;'])
 
@@ -174,12 +175,165 @@ module top(input logic clk, input logic reset, input logic [31:0] cyc_cnt, outpu
    m5_if_neq(m5_target, FPGA, ['logic [7:0] uio_in, uio_out, uio_oe;'])
    logic [31:0] r;  // a random value
    always @(posedge clk) r <= m5_if_defined_as(MAKERCHIP, 1, ['$urandom()'], ['0']);
-   assign ui_in = r[7:0]; //comment this out if using specific inputs (5 lines below)
+   //assign ui_in = r[7:0]; //comment this out if using specific inputs (5 lines below)
    m5_if_neq(m5_target, FPGA, ['assign uio_in = 8'b0;'])
    logic ena = 1'b0;
    logic rst_n = ! reset;
    
    
+   // Or, to provide specific inputs at specific times (as for lab C-TB) ...
+   // BE SURE TO COMMENT THE ASSIGNMENT OF INPUTS ABOVE. "assign ui_in = r[7:0];"
+   // BE SURE TO DRIVE THESE ON THE B-PHASE OF THE CLOCK (ODD STEPS).
+   // Driving on the rising clock edge creates a race with the clock that has unpredictable simulation behavior.
+   initial begin
+      #1  // Drive inputs on the B-phase.
+         ui_in = 8'h0;
+      #100// Step #_/2 cycles, past reset.
+         ui_in = 8'h04;
+      #8
+         ui_in = 8'h00;
+      
+      #40
+         ui_in = 8'h04;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h02;
+      #8
+         ui_in = 8'h00;
+      
+      
+      #40
+         ui_in = 8'h04;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h02;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h02;
+      #8
+         ui_in = 8'h00;
+      
+      
+      #80
+         ui_in = 8'h04;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h02;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h02;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h08;
+      #8
+         ui_in = 8'h00;
+      
+      
+      #80
+         ui_in = 8'h04;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h02;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h02;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h08;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h08;
+      #8
+         ui_in = 8'h00;
+      
+      
+      
+      #20
+         ui_in = 8'h08;
+      #8
+         ui_in = 8'h00;
+      
+      #100// Step #_/2 cycles, past reset.
+         ui_in = 8'h04;
+      #8
+         ui_in = 8'h00;
+      
+      #40
+         ui_in = 8'h04;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h02;
+      #8
+         ui_in = 8'h00;
+      
+      
+      #40
+         ui_in = 8'h04;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h02;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h02;
+      #8
+         ui_in = 8'h00;
+      
+      
+      #80
+         ui_in = 8'h04;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h02;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h02;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h08;
+      #8
+         ui_in = 8'h00;
+      
+      
+      #80
+         ui_in = 8'h04;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h02;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h02;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h08;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h04;
+      #8
+         ui_in = 8'h00;
+      
+      // ...etc.
+   end
+
    // Instantiate the Tiny Tapeout module.
    m5_user_module_name tt(.*);
    
