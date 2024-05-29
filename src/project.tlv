@@ -64,12 +64,12 @@
       
       //USER VARIABLES:
       // $user_guess: user input guess
-      @0
-         $reset_in = *reset || *ui_in[7] || >>2$lose_game && >>1$user_button_press;
+      @-1
+         $reset_in = *reset || *ui_in[7] || >>3$lose_game && >>2$user_button_press;
          
       @1   
          //native clock count. Feeds into subdividing into human-respondable clock $game_cnt.
-         $ii[m5_CLKS_PER_ADV_INDEX_MAX:0] = $reset || >>1$ii==m5_calc(m5_CLKS_PER_ADV_CNT-1)
+         $ii[m5_CLKS_PER_ADV_INDEX_MAX:0] = $reset || >>1$ii==m5_calc(m5_CLKS_PER_ADV_CNT-1) || >>1$win_stg
                     ? 0 :
                     >>1$ii + 1; // $ii will loop back to zero when it reaches m5_DEPTH_INDEX_MAX bits.
          
@@ -85,8 +85,8 @@
          // game state: 1 = user is guessing. 0 = something else
          $state_guess = $reset || >>1$win_stg
                        ? 1'b0 :
-                       $advance_game_cnt && ( >>1$game_cnt >= $game_stg )
-                       ? ! >>1$state_guess :
+                       $advance_game_cnt && ( >>1$game_cnt == >>1$game_stg-1 )
+                       ? 1'b1:
                        >>1$state_guess;
          
          
@@ -94,7 +94,8 @@
                             || ( >>1$state_guess &&  >>1$user_button_press);
          
          // game counter
-         $game_cnt[m5_DEPTH_INDEX_MAX:0] = $reset || >>1$win_stg || ($advance_game_cnt && >>1$game_cnt>=>>1$game_stg) //human-respondable game clock/count. No "-1" because you want game_cnt to be 2x the depth of the data (due to two bits per count)
+         $game_cnt[m5_DEPTH_INDEX_MAX:0] =
+                    $reset || >>1$win_stg || $state_guess && ! >>1$state_guess //human-respondable game clock/count. No "-1" because you want game_cnt to be 2x the depth of the data (due to two bits per count)
                     ? 0 :
                     (! $state_guess && $advance_game_cnt && ( >>1$game_cnt < >>1$game_stg ) ) || ( >>1$state_guess && >>1$correct_guess )
                     ? >>1$game_cnt + 1 :
