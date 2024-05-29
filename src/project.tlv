@@ -21,11 +21,11 @@
    //-------------------------------------------------------
    
    var(in_fpga, 1)   /// 1 to include the demo board. (Note: Logic will be under /fpga_pins/fpga.)
-   var(debounce_inputs, 1)         /// 1: Provide synchronization and debouncing on all input signals.
+   var(debounce_inputs, m5_if_defined_as(MAKERCHIP, 1, 0, 1))         /// 1: Provide synchronization and debouncing on all input signals.
                                    /// 0: Don't provide synchronization and debouncing.
                                    /// m5_if_defined_as(MAKERCHIP, 1, 0, 1): Debounce unless in Makerchip.
    //user variables
-   define_hier(DEPTH, 32) // max bits in correct sequence. Needs to be even. 
+   define_hier(DEPTH, 8) // max bits in correct sequence. Needs to be even. 
                           // _hier = there are multiple linked variables. _INDEX_MAX is log2 of the game counter max count. _CNT is the value of max count.
    define_hier(CLKS_PER_ADV,20000000) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
    var(clks_per_led_off, 3000000) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
@@ -101,14 +101,14 @@
                     ? >>1$game_cnt + 1 :
                     >>1$game_cnt;
          
-         $game_stg[m5_DEPTH_INDEX_MAX:0] = $reset || >>1$game_stg == m5_calc(m5_DEPTH_CNT-1) //stage-counting signal for max(game_cnt). Increment one more stage if user is successful  
+         $game_stg[m5_DEPTH_INDEX_MAX:0] = $reset || >>1$game_stg == m5_calc(m5_DEPTH_CNT/2) //stage-counting signal for max(game_cnt). Increment one more stage if user is successful  
                     ? 1 :
-                    $win_stg == 1 && >>1$game_stg != m5_calc(m5_DEPTH_CNT-1)
+                    $win_stg == 1 && >>1$game_stg != m5_calc(m5_DEPTH_CNT/2)
                     ? >>1$game_stg + 1 :
                     >>1$game_stg;
          
          
-         $correct_seq[m5_DEPTH_MAX:0] = m5_DEPTH_CNT'hD6D6D6D6;
+         $correct_seq[m5_DEPTH_MAX:0] = m5_DEPTH_CNT'hD6;
          $color[1:0] = $correct_seq[ ($game_cnt + $game_cnt) +: 2];
          
          // USER INPUT PHASE (should include $state_guess in conditionals!)
@@ -221,19 +221,19 @@ module top(input logic clk, input logic reset, input logic [31:0] cyc_cnt, outpu
       
       #40
          ui_in = 8'h04;
-      #8
+      #2
          ui_in = 8'h00;
-      #20
+      #2
          ui_in = 8'h02;
-      #8
+      #2
          ui_in = 8'h00;
-      #20
+      #2
          ui_in = 8'h02;
       #8
          ui_in = 8'h00;
       
       
-      #80
+      #120
          ui_in = 8'h04;
       #8
          ui_in = 8'h00;
@@ -268,7 +268,7 @@ module top(input logic clk, input logic reset, input logic [31:0] cyc_cnt, outpu
       #8
          ui_in = 8'h00;
       #20
-         ui_in = 8'h08;
+         ui_in = 8'h04;
       #8
          ui_in = 8'h00;
       
