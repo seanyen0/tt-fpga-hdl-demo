@@ -25,10 +25,10 @@
                                    /// 0: Don't provide synchronization and debouncing.
                                    /// m5_if_defined_as(MAKERCHIP, 1, 0, 1): Debounce unless in Makerchip.
    //user variables
-   define_hier(DEPTH, 32) // max bits in correct sequence. Needs to be even. 
+   define_hier(DEPTH, 30) // max bits in correct sequence. Needs to be even. 
                           // _hier = there are multiple linked variables. _INDEX_MAX is log2 of the game counter max count. _CNT is the value of max count.
-   define_hier(CLKS_PER_ADV,20000000) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
-   var(clks_per_led_off, 3000000) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
+   define_hier(CLKS_PER_ADV,m5_if_defined_as(MAKERCHIP, 1, 4, 20000000)) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
+   var(clks_per_led_off, m5_if_defined_as(MAKERCHIP, 1, 2, 3000000)) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
    
    
    // ======================
@@ -54,7 +54,7 @@
    
    |simon
       //COUNTER VARIABLES:
-      // $game_cnt: counting signal for advancing the "correct color". Max value = m5_DEPTH_CNT
+      // $game_cnt: counting signal for advancing the "correct color". Max value = $game_stg
       // $game_stg: stage-counting signal for max(game_cnt). Increment one more stage if user is successful  
       // $game_rnd: "game round": controls speed of clock
       
@@ -103,9 +103,9 @@
                     ? >>1$game_cnt + 1 :
                     >>1$game_cnt;
          
-         $game_stg[m5_DEPTH_INDEX_MAX:0] = $reset || >>1$game_stg > m5_calc(m5_DEPTH_CNT/2) //stage-counting signal for max(game_cnt). Increment one more stage if user is successful  
+         $game_stg[m5_DEPTH_INDEX_MAX:0] = $reset || >>1$game_stg >= m5_calc(m5_DEPTH_CNT-1) //stage-counting signal for max(game_cnt). Increment one more stage if user is successful  
                     ? 1 :
-                    $win_stg == 1 && >>1$game_stg <= m5_calc(m5_DEPTH_CNT/2)
+                    $win_stg == 1 && >>1$game_stg < m5_calc(m5_DEPTH_CNT-1)
                     ? >>1$game_stg + 1 :
                     >>1$game_stg;
          
@@ -119,7 +119,7 @@
             $rf_rd_data1[1:0] = /xreg[$rf_rd_index1]>>1$value;
          
          //need to connect:
-         $rf_wr_en = $win_stg == 1 && ( >>1$game_stg <= m5_calc(m5_DEPTH_CNT/2) );
+         $rf_wr_en = $win_stg && ( >>1$game_stg <= m5_calc(m5_DEPTH_CNT-1) );
          $rf_wr_index[m5_DEPTH_INDEX_MAX:0] = >>1$game_stg;
          ?$rf_wr_en
             $rf_wr_data[1:0] = >>1$ii[1:0];
@@ -127,7 +127,7 @@
          $color[1:0] = $rf_rd_data1[1:0];
          $rf_rd_index1[m5_DEPTH_INDEX_MAX:0] = $game_cnt;
          
-         //$color[1:0] = $correct_seq[ ($game_cnt + $game_cnt) +: 2];
+         
          
          // USER INPUT PHASE (should include $state_guess in conditionals!)
          $user_input[3:0] = *ui_in[3:0]; //"continuous" intake of user buttons
@@ -146,7 +146,7 @@
          $correct_guess = $user_button_press && ($user_guess == $color);
          $lose_game = $user_button_press && ! $correct_guess && ! >>1$lose_game
                       ? 1 :
-                      $reset || >>1$lose_game && $user_button_press
+                      $reset || >>1$lose_game && $user_button_press //might be redundant
                       ? 0 :
                       >>1$lose_game;
          $win_stg_in = (>>1$user_input == 4'b0) && >>1$state_guess && ( >>1$game_cnt == >>1$game_stg ); //WAS: ! >>1$lose_game && ( >>1$game_cnt == >>1$game_stg )
@@ -156,10 +156,13 @@
                     ? >>1$win_stg_counter :
                     >>1$win_stg_counter + 1;
          $win_stg = ($win_stg_counter == m5_calc(m5_CLKS_PER_ADV_CNT-1)) && (>>1$win_stg_counter == m5_calc(m5_CLKS_PER_ADV_CNT-2));
-         
+         //lose game stats digits:
          $disp_stat_dig1 = >>1$lose_game && $ii > m5_CLKS_PER_ADV_MAX/3 && $ii <= m5_CLKS_PER_ADV_MAX/3*2;
          $disp_stat_dig2 = >>1$lose_game && $ii > m5_CLKS_PER_ADV_MAX/3*2;
          
+         //$stat_stg_sel[3:0] = $disp_stat_dig1
+                              //? $game_stg[m5_DEPTH_INDEX_MAX:4] :
+                              
          /* verilator lint_off WIDTH */
          $stat_dig1[7:0] =
                      $game_stg[m5_DEPTH_INDEX_MAX:4] - 1 == 0 || $game_stg[m5_DEPTH_INDEX_MAX:4] == 0
@@ -231,6 +234,8 @@
                      ? 8'b01110001:
                      8'b00000000;
          
+         
+         
          // Display the sequence to the user: flash off before turning on
          $sseg_out[7:0] = (! $state_guess && ( $ii > m5_CLKS_PER_ADV_MAX - m5_clks_per_led_off  || $advance_game_cnt ) ) || $reset
                      ? 8'b10000000 : //80, just the dot
@@ -248,7 +253,7 @@
                      ? 8'b01011011: //5b
                      ( ! $state_guess && $color == 3 && ($game_cnt < $game_stg) ) || ( $state_guess && $user_input != 0 && $user_guess == 3 )
                      ? 8'b01001111 : //4f
-                     8'b01000000;
+                     8'b01000000; //"-"
          
          // m5+sseg_decoder($digits_out, $digits_in)
          *uo_out = $sseg_out;
@@ -310,7 +315,7 @@ module top(input logic clk, input logic reset, input logic [31:0] cyc_cnt, outpu
       #8
          ui_in = 8'h00;
       #20
-         ui_in = 8'h04;//should be 01
+         ui_in = 8'h01;//should be 01
       #8
          ui_in = 8'h00;
       
@@ -368,12 +373,37 @@ module top(input logic clk, input logic reset, input logic [31:0] cyc_cnt, outpu
       #8
          ui_in = 8'h00;
       
+      #80
+         ui_in = 8'h01;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h01;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h01;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h04;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h01;
+      #8
+         ui_in = 8'h00;
+      #20
+         ui_in = 8'h04;
+      #8
+         ui_in = 8'h00;
+      
    end
 
    // Instantiate the Tiny Tapeout module.
    m5_user_module_name tt(.*);
    
-   assign passed = top.cyc_cnt > 400;
+   assign passed = top.cyc_cnt > 800;
    assign failed = 1'b0;
 endmodule
 
