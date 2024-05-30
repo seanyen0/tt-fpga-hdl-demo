@@ -16,12 +16,12 @@
    //-------------------------------------------------------
    // Build Target Configuration
    //
-   var(my_design, tt_um_example)   /// The name of your top-level TT module, to match your info.yml.
+   var(my_design, tt_um_seanyen0_SIMON)   /// The name of your top-level TT module, to match your info.yml.
    var(target, ASIC)   /// Note, the FPGA CI flow will set this to FPGA.
    //-------------------------------------------------------
    
    var(in_fpga, 1)   /// 1 to include the demo board. (Note: Logic will be under /fpga_pins/fpga.)
-   var(debounce_inputs, m5_if_defined_as(MAKERCHIP, 1, 0, 1))         /// 1: Provide synchronization and debouncing on all input signals.
+   var(debounce_inputs, 0)         /// 1: Provide synchronization and debouncing on all input signals.
                                    /// 0: Don't provide synchronization and debouncing.
                                    /// m5_if_defined_as(MAKERCHIP, 1, 0, 1): Debounce unless in Makerchip.
    //user variables
@@ -67,7 +67,8 @@
       
       @-1
          $reset_in = *reset || *ui_in[7] || >>3$lose_game && >>2$user_button_press;
-         
+         // USER INPUT
+         $user_input[3:0] = *ui_in[3:0]; //"continuous" intake of user buttons
       
       @1   
          //native clock count. Feeds into subdividing into human-respondable clock $game_cnt.
@@ -129,8 +130,7 @@
          
          
          
-         // USER INPUT PHASE (should include $state_guess in conditionals!)
-         $user_input[3:0] = *ui_in[3:0]; //"continuous" intake of user buttons
+         //Process user inputs
          $user_button_press = ( >>1$user_input == 4'b0 ) && ( $user_input != 4'b0 ) && >>1$state_guess; // User must release previous button before pressing the next button
          $user_guess[1:0] = $user_button_press && $user_input == 4'b0001
                        ? 2'b00 :
@@ -160,12 +160,8 @@
          $disp_stat_dig1 = >>1$lose_game && $ii > m5_CLKS_PER_ADV_MAX/3 && $ii <= m5_CLKS_PER_ADV_MAX/3*2;
          $disp_stat_dig2 = >>1$lose_game && $ii > m5_CLKS_PER_ADV_MAX/3*2;
          
-         /*$stat_stg_dig[7:4] = $disp_stat_dig1
-                              ? ($game_stg-1)[m5_DEPTH_INDEX_MAX:4] :
-                              $disp_stat_dig2
-                              ? ($game_stg-1)[3:0] :
-                              0;*/
-         $game_stg_m1[7:0] = $game_stg - 1;
+         
+         $game_stg_m1[7:0] = {3'b0,$game_stg} - 1; // !!!!!! hard code zero padding
          /* verilator lint_off WIDTH */
          $stat_dig1[7:0] =
                      $game_stg_m1[7:4] == 0
