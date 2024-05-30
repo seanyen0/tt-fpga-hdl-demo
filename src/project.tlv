@@ -25,7 +25,7 @@
                                    /// 0: Don't provide synchronization and debouncing.
                                    /// m5_if_defined_as(MAKERCHIP, 1, 0, 1): Debounce unless in Makerchip.
    //user variables
-   define_hier(DEPTH, 50) // max bits in correct sequence. Needs to be even. 
+   define_hier(DEPTH, 32) // max bits in correct sequence. Needs to be even. 
                           // _hier = there are multiple linked variables. _INDEX_MAX is log2 of the game counter max count. _CNT is the value of max count.
    define_hier(CLKS_PER_ADV,20000000) // subdivide system clock into human viewable clock. Eventually 20M for 1s period
    var(clks_per_led_off, 3000000) // # of clocks for LED to flash off (to delimit count). Must be < clks_per_adv
