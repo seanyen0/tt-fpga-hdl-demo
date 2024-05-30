@@ -69,7 +69,7 @@
          $reset_in = *reset || *ui_in[7] || >>3$lose_game && >>2$user_button_press;
          // USER INPUT
          $user_input[3:0] = *ui_in[3:0]; //"continuous" intake of user buttons
-      
+         $mode_two_player = *ui_in[6];
       @1   
          //native clock count. Feeds into subdividing into human-respondable clock $game_cnt.
          $ii[m5_CLKS_PER_ADV_INDEX_MAX:0] = $reset || >>1$ii==m5_calc(m5_CLKS_PER_ADV_CNT-1) || >>1$win_stg || ! >>2$lose_game && >>1$lose_game
@@ -123,7 +123,9 @@
          $rf_wr_en = $win_stg && ( >>1$game_stg <= m5_calc(m5_DEPTH_CNT-1) );
          $rf_wr_index[m5_DEPTH_INDEX_MAX:0] = >>1$game_stg;
          ?$rf_wr_en
-            $rf_wr_data[1:0] = >>1$ii[1:0];
+            $rf_wr_data[1:0] = $mode_two_player
+                               ? $user_guess :
+                               >>1$ii[1:0];
          $rf_rd_en1 = $advance_game_cnt;
          $color[1:0] = $rf_rd_data1[1:0];
          $rf_rd_index1[m5_DEPTH_INDEX_MAX:0] = $game_cnt;
@@ -237,7 +239,7 @@
          
          // Display the sequence to the user: flash off before turning on
          $sseg_out[7:0] = (! $state_guess && ( $ii > m5_CLKS_PER_ADV_MAX - m5_clks_per_led_off  || $advance_game_cnt ) ) || $reset
-                     ? 8'b10000000 : //80, just the dot
+                     ? 8'b00000000 : //80, just the dot
                      $lose_game && ! ($disp_stat_dig1 || $disp_stat_dig2)
                      ? 8'b00111000 : //"L", 0x38
                      $lose_game && $disp_stat_dig1
